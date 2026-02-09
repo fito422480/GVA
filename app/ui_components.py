@@ -16,31 +16,25 @@ def display_info_icons():
         st.session_state.info_icons_time = time.time()
 
     if st.session_state.info_icons_displayed:
-        st.markdown(
-            """
-            <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 10px; padding: 20px;">
-                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; max-width: 800px;">
-                    <div class="info-box" data-type="enter-url">
-                        <h3 style="color: #0066cc;">💻 Enter URL</h3>
-                        <p style="color: #000000;">Fetch webpage content for extraction.</p>
+        cols = st.columns(4)
+        features = [
+            ("🌐", "URL Destino", "Dime qué sitio quieres explorar."),
+            ("🎯", "Precisión IA", "Extracción exacta de campos."),
+            ("⚡", "Velocidad", "Resultados en segundos."),
+            ("🛠️", "Formatos", "Exporta a CSV/Excel.")
+        ]
+        
+        for i, (icon, title, desc) in enumerate(features):
+            with cols[i]:
+                st.markdown(f"""
+                    <div class="info-box">
+                        <span style="font-size: 2rem;">{icon}</span>
+                        <h3>{title}</h3>
+                        <p>{desc}</p>
                     </div>
-                    <div class="info-box" data-type="specify-data">
-                        <h3 style="color: #cc6600;">🔍 Specify Data</h3>
-                        <p style="color: #000000;">Define what data you want to extract.</p>
-                    </div>
-                    <div class="info-box" data-type="save-data">
-                        <h3 style="color: #006600;">💾 Save Data</h3>
-                        <p style="color: #000000;">Save in JSON, CSV, or Excel format.</p>
-                    </div>
-                    <div class="info-box" data-type="convert-data">
-                        <h3 style="color: #cc0000;">🔄 Convert Data</h3>
-                        <p style="color: #000000;">Convert between different formats.</p>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+                """, unsafe_allow_html=True)
+                if st.button(f"Usar {title}", key=f"feat_{i}", use_container_width=True):
+                    st.info(f"¡Genial! Escribe la URL abajo o especifica qué datos quieres de '{title}'.")
 
         if time.time() - st.session_state.info_icons_time > 10 or ("messages" in st.session_state and len(st.session_state.messages) > 0):
             st.session_state.info_icons_displayed = False
@@ -96,7 +90,7 @@ def format_data(data: str | bytes | io.BytesIO, format_type: str) -> pd.DataFram
             elif format_type == 'excel':
                 return pd.read_excel(io.BytesIO(data.encode()), engine='openpyxl')
     except Exception as e:
-        st.error(f"Error formatting data: {str(e)}")
+        st.error(f"Error al formatear datos: {str(e)}")
         return None
 
 def display_message(message):
@@ -112,7 +106,7 @@ def display_message(message):
             if df is not None:
                 st.dataframe(df)
             else:
-                st.warning("Failed to display data as a table. Showing raw content:")
+                st.warning("No se pudo mostrar los datos como tabla. Mostrando contenido original:")
                 st.code(content)
         else:
             st.markdown(content)

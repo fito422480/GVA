@@ -46,14 +46,14 @@ def handle_oauth_callback():
             )
             flow.fetch_token(code=st.query_params['code'])
             st.session_state['google_auth_token'] = flow.credentials.to_json()
-            st.success("Successfully authenticated with Google!")
+            st.success("¡Autenticación con Google exitosa!")
             st.query_params.clear()
         except FileNotFoundError:
             st.error(ErrorMessages.OAUTH_FAILED)
-            logger.error("client_secret.json not found")
+            logger.error("client_secret.json no encontrado")
         except Exception as e:
-            st.error(f"{ErrorMessages.OAUTH_FAILED}\n\nDetails: {str(e)}")
-            logger.error(f"OAuth error: {str(e)}")
+            st.error(f"{ErrorMessages.OAUTH_FAILED}\n\nDetalles: {str(e)}")
+            logger.error(f"Error de OAuth: {str(e)}")
 
 def serialize_bytesio(obj):
     if isinstance(obj, BytesIO):
@@ -81,16 +81,16 @@ def load_chat_history():
 
 def safe_process_message(web_scraper_chat, message, conversation_history=None):
     if message is None or message.strip() == "":
-        return "I'm sorry, but I didn't receive any input. Could you please try again?"
+        return "Lo lamento, pero no recibí ninguna entrada. ¿Podrías intentarlo de nuevo?"
     try:
         progress_placeholder = st.empty()
-        progress_placeholder.text("Initializing scraper...")
+        progress_placeholder.text("Iniciando scraper...")
 
         start_time = time.time()
         response = web_scraper_chat.process_message(message, conversation_history)
         end_time = time.time()
 
-        progress_placeholder.text(f"Scraping completed in {end_time - start_time:.2f} seconds.")
+        progress_placeholder.text(f"Extracción completada en {end_time - start_time:.2f} segundos.")
 
         # Check for error messages in response
         if isinstance(response, str) and ("Error:" in response or "Failed to" in response or "is missing" in response):
@@ -105,9 +105,9 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
                 df.to_csv(csv_buffer, index=False)
                 csv_buffer.seek(0)
                 st.download_button(
-                    label="Download CSV",
+                    label="Descargar CSV",
                     data=csv_buffer,
-                    file_name="data.csv",
+                    file_name="datos.csv",
                     mime="text/csv"
                 )
 
@@ -138,7 +138,7 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
                 mime="text/csv"
             )
 
-            return "DataFrame displayed and available for download as CSV."
+            return "Tabla de datos mostrada y disponible para descargar como CSV."
 
         return response
     except ValueError as e:
@@ -150,22 +150,25 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
             st.error(f"{ErrorMessages.SCRAPING_FAILED}\n\nDetails: {error_msg}")
         logger.error(f"ValueError during processing: {error_msg}")
         return error_msg
-    except Exception as e:
-        st.error(f"{ErrorMessages.GENERIC_ERROR}\n\nDetails: {str(e)}")
-        logger.error(f"Unexpected error during processing: {str(e)}")
-        return f"{ErrorMessages.GENERIC_ERROR}\n\nDetails: {str(e)}"
+        st.error(f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {str(e)}")
+        logger.error(f"Error inesperado durante el procesamiento: {str(e)}")
+        return f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {str(e)}"
 
 def get_date_group(date_str):
     date = datetime.strptime(date_str, "%Y-%m-%d")
     today = datetime.now().date()
     if date.date() == today:
-        return "Today"
+        return "Hoy"
     elif date.date() == today - timedelta(days=1):
-        return "Yesterday"
+        return "Ayer"
     elif date.date() > today - timedelta(days=7):
-        return date.strftime("%A")
+        # Localize day names if possible, or just use English for now if simple
+        days_es = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"}
+        return days_es.get(date.strftime("%A"), date.strftime("%A"))
     else:
-        return date.strftime("%B %d, %Y")
+        months_es = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
+        month = months_es.get(date.strftime("%B"), date.strftime("%B"))
+        return f"{date.day} de {month}, {date.year}"
 
 def get_last_url_from_chat(messages):
     for message in reversed(messages):
@@ -310,7 +313,7 @@ def display_service_status():
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("### Setup Status")
+    st.markdown("### Estado del Sistema")
 
     for key, info in status.items():
         if info["configured"]:
@@ -321,7 +324,7 @@ def display_service_status():
             if info["env_var"]:
                 env_html = f'<span class="status-env">({info["env_var"]})</span>'
             else:
-                env_html = '<span class="status-env">(Tor not running)</span>'
+                env_html = '<span class="status-env">(Tor no iniciado)</span>'
 
         html = f"""
             <div class="service-status">
@@ -336,8 +339,8 @@ def display_service_status():
     missing_services = [key for key, info in status.items() if not info["configured"]]
     if missing_services:
         st.markdown("---")
-        st.markdown("""<p style="margin: 0; padding: 0; line-height: 1.4;"><strong>Setup Help:</strong><br>
-See <a href="https://github.com/itsOwen/CyberScraper-2077/blob/main/README.md">README</a> for configuration instructions.</p>""", unsafe_allow_html=True)
+        st.markdown("""<p style="margin: 0; padding: 0; line-height: 1.4;"><strong>Ayuda de Configuración:</strong><br>
+Consulta el <a href="https://github.com/itsOwen/CyberScraper-2077/blob/main/README.md">README</a> para instrucciones de configuración.</p>""", unsafe_allow_html=True)
 
 def render_message(role, content, avatar_path):
     message_class = "user-message" if role == "user" else "assistant-message"
@@ -371,9 +374,9 @@ def display_message_with_sheets_upload(message, message_index):
                         df.to_csv(csv_buffer, index=False)
                         csv_buffer.seek(0)
                         st.download_button(
-                            label="📥 Download as CSV",
+                            label="📥 Descargar como CSV",
                             data=csv_buffer,
-                            file_name="data.csv",
+                            file_name="datos.csv",
                             mime="text/csv",
                             key=f"csv_download_{message_index}"
                         )
@@ -415,7 +418,7 @@ atexit.register(cleanup)
 def main():
 
     st.set_page_config(
-        page_title="CyberScraper 2077",
+        page_title="GVA-Scrapper",
         page_icon="app/icons/radiation.png",
         layout="wide"
     )
@@ -447,14 +450,19 @@ def main():
         st.session_state.web_scraper_chat = None
 
     with st.sidebar:
-        st.title("CyberScraper-2077")
+        st.markdown("""
+            <div style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
+                <h2 style="margin:0; font-size: 1.2rem; background: linear-gradient(to right, #8b5cf6, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">GVA-SCRAPPER</h2>
+                <p style="margin:0; font-size: 0.7rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em;">v2.0 Elite Terminal</p>
+            </div>
+        """, unsafe_allow_html=True)
 
         # Model selection
-        st.subheader("Select Model")
+        st.subheader("Seleccionar Modelo")
         default_models = ["gpt-4.1-mini", "gpt-4o-mini", "gemini-1.5-flash", "gemini-pro"]
         ollama_models = st.session_state.get('ollama_models', [])
         all_models = default_models + [f"ollama:{model}" for model in ollama_models]
-        selected_model = st.selectbox("Choose a model", all_models, index=all_models.index(st.session_state.selected_model) if st.session_state.selected_model in all_models else 0)
+        selected_model = st.selectbox("Elige un modelo", all_models, index=all_models.index(st.session_state.selected_model) if st.session_state.selected_model in all_models else 0)
 
         if selected_model != st.session_state.selected_model:
             st.session_state.selected_model = selected_model
@@ -466,20 +474,20 @@ def main():
 
         st.markdown("---")
 
-        st.session_state.use_current_browser = st.checkbox("Use Current Browser (No Docker)", value=False, help="Works Natively, Doesn't Work with Docker. if a website is blocking your browser, you can use this option to use the current browser instead of opening a new one.")
+        st.session_state.use_current_browser = st.checkbox("Usar Navegador Actual (No Docker)", value=False, help="Funciona de forma nativa, no funciona con Docker. Si un sitio web bloquea el scraper, puedes usar esta opción.")
 
-        if st.button("Refresh Ollama Models"):
-            with st.spinner("Fetching Ollama models..."):
+        if st.button("Actualizar Modelos Ollama"):
+            with st.spinner("Buscando modelos Ollama..."):
                 st.session_state.ollama_models = asyncio.run(list_ollama_models())
-            st.success(f"Found {len(st.session_state.ollama_models)} Ollama models")
+            st.success(f"Se encontraron {len(st.session_state.ollama_models)} modelos Ollama")
             st.rerun()
 
-        if st.button("+ 🗨️ New Chat", key="new_chat", use_container_width=True):
+        if st.button("+ 🗨️ Nuevo Chat", key="new_chat", use_container_width=True):
             new_chat_id = str(datetime.now().timestamp())
             st.session_state.chat_history[new_chat_id] = {
                 "messages": [],
                 "date": datetime.now().strftime("%Y-%m-%d"),
-                "name": "🗨️ New Chat"
+                "name": "🗨️ Nuevo Chat"
             }
             st.session_state.current_chat_id = new_chat_id
             st.session_state.web_scraper_chat = None
@@ -496,7 +504,7 @@ def main():
         for date_group, chats in grouped_chats.items():
             st.markdown(f"<div class='date-group'>{date_group}</div>", unsafe_allow_html=True)
             for chat_id, chat_data in chats:
-                button_label = chat_data.get('name', "🗨️ Unnamed Chat")
+                button_label = chat_data.get('name', "🗨️ Chat sin nombre")
 
                 col1, col2 = st.columns([0.78, 0.22])
 
@@ -523,7 +531,10 @@ def main():
 
     st.markdown(
         """
-        <h1 style="text-align: center; font-size: 30px; color: #333;">CyberScraper 2077</h1>
+        <div style="text-align: center; padding: 40px 0 20px 0;">
+            <h1 style="font-size: 3.5rem; margin:0; background: linear-gradient(to bottom, #fff, #71717a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.2));">GVA-Scrapper</h1>
+            <p style="color: #a1a1aa; font-size: 1.1rem; max-width: 600px; margin: 10px auto 0 auto;">Extracción de datos web inteligente con precisión quirúrgica y velocidad extrema.</p>
+        </div>
         """,
         unsafe_allow_html=True
     )
@@ -555,7 +566,7 @@ def main():
                     display_message_with_sheets_upload(message, index)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    prompt = st.chat_input("Enter the URL to scrape or ask a question regarding the data", key="user_input")
+    prompt = st.chat_input("Ingresa la URL a extraer o haz una pregunta sobre los datos", key="user_input")
 
     if prompt:
         st.session_state.chat_history[st.session_state.current_chat_id]["messages"].append({"role": "user", "content": prompt})
@@ -579,7 +590,7 @@ def main():
                     chat_messages
                 )
                 if isinstance(full_response, str) and not full_response.startswith("Error:"):
-                    st.success("Scraping completed successfully!")
+                    st.success("Extracción optimizada completa.")
 
                 if full_response is not None:
                     if isinstance(full_response, tuple) and len(full_response) == 2 and isinstance(full_response[1], BytesIO):
@@ -594,7 +605,7 @@ def main():
 
     st.markdown(
         """
-        <p style="text-align: center; font-size: 12px; color: #666666;">CyberScraper 2077 can make mistakes sometimes. Report any issues to the developers.</p>
+        <p style="text-align: center; font-size: 13px; color: #52525b; margin-top: 50px;">Desarrollador por Gabriel, Venancio y Adolfo</p>
         """,
         unsafe_allow_html=True
     )

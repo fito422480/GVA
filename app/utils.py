@@ -4,33 +4,22 @@ import time
 import streamlit as st
 import random
 
-# Loading messages for the cyberpunk theme
+# Mensajes de carga profesionales
 _LOADING_MESSAGES = (
-    "Ripping data from the net, Silverhand style...",
-    "Scraping the web, leaving no trace...",
-    "Burning through the data cores...",
-    "Jacking in, scraping every byte...",
-    "Tearing down the firewall, extracting the goods...",
-    "No rules, just raw data extraction...",
-    "Slicing through the web's defenses...",
-    "No mercy for the web, just pure data...",
-    "Scraping the net, one byte at a time...",
-    "Crashing through the data barriers, Johnny-style...",
-    "Data extraction in progress—neon lights flickering...",
-    "Hacking the matrix, one data stream at a time...",
-    "Engaging in data warfare, zero tolerance...",
-    "Decrypting the web's secrets, no going back...",
-    "Plundering the net's underbelly, Cyberpunk style...",
-    "Overloading the data circuits, full throttle...",
-    "Breach detected—data infiltration in full swing...",
-    "Running stealth protocols, data extraction initiated...",
-    "Reprogramming the data streams—Neo's got nothing on us...",
-    "Surging through the web's dark alleys, data secured...",
-    "Unleashing the data chaos—no boundaries...",
-    "Breaking through digital fortresses, one byte at a time...",
-    "Cracking the net's encryption—data heist in motion...",
-    "Navigating the data labyrinth, Cyberpunk flair...",
-    "Infiltrating the data vaults—high-tech heist underway...",
+    "Inyectando protocolos de extracción...",
+    "Navegando por las capas de la red...",
+    "Extrayendo datos con precisión quirúrgica...",
+    "Analizando estructuras del DOM...",
+    "Bypassing filtros de seguridad...",
+    "Optimizando flujo de datos...",
+    "Sincronizando con el motor de IA...",
+    "Asegurando conexión proxy...",
+    "Recopilando información en tiempo real...",
+    "Procesando metadatos avanzados...",
+    "Refinando resultados de extracción...",
+    "Escaneando el objetivo digital...",
+    "Construyendo base de datos temporal...",
+    "Validando integridad de la información..."
 )
 
 
