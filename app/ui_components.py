@@ -24,6 +24,13 @@ def display_info_icons():
             ("🛠️", "Formatos", "Exporta a CSV/Excel.")
         ]
         
+        prompts = [
+            "Extrae datos de esta URL: [PEGA_TU_URL_AQUÍ]",
+            "¿Qué datos puedes extraer de un sitio e-commerce?",
+            "¿Cómo guardo los resultados en Excel?",
+            "Explícame cómo convertir JSON a CSV."
+        ]
+        
         for i, (icon, title, desc) in enumerate(features):
             with cols[i]:
                 st.markdown(f"""
@@ -33,8 +40,9 @@ def display_info_icons():
                         <p>{desc}</p>
                     </div>
                 """, unsafe_allow_html=True)
-                if st.button(f"Usar {title}", key=f"feat_{i}", use_container_width=True):
-                    st.info(f"¡Genial! Escribe la URL abajo o especifica qué datos quieres de '{title}'.")
+                if st.button(f"Ejecutar", key=f"feat_{i}", use_container_width=True):
+                    st.session_state.feature_prompt = prompts[i]
+                    st.rerun()
 
         if time.time() - st.session_state.info_icons_time > 10 or ("messages" in st.session_state and len(st.session_state.messages) > 0):
             st.session_state.info_icons_displayed = False

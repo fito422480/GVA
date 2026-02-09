@@ -340,7 +340,7 @@ def display_service_status():
     if missing_services:
         st.markdown("---")
         st.markdown("""<p style="margin: 0; padding: 0; line-height: 1.4;"><strong>Ayuda de Configuración:</strong><br>
-Consulta el <a href="https://github.com/itsOwen/CyberScraper-2077/blob/main/README.md">README</a> para instrucciones de configuración.</p>""", unsafe_allow_html=True)
+Consulta el <a href="https://github.com/fito422480/GVA/blob/main/README.md">README</a> para instrucciones de configuración.</p>""", unsafe_allow_html=True)
 
 def render_message(role, content, avatar_path):
     message_class = "user-message" if role == "user" else "assistant-message"
@@ -445,9 +445,16 @@ def main():
             st.session_state.current_chat_id = new_chat_id
             save_chat_history(st.session_state.chat_history)
     if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = "gpt-4.1-mini"
+        # Default to Gemini if OpenAI is missing but Google is present
+        if not os.getenv("OPENAI_API_KEY") and os.getenv("GOOGLE_API_KEY"):
+            st.session_state.selected_model = "gemini-1.5-flash"
+        else:
+            st.session_state.selected_model = "gpt-4.1-mini"
     if 'web_scraper_chat' not in st.session_state:
         st.session_state.web_scraper_chat = None
+    
+    if 'feature_prompt' not in st.session_state:
+        st.session_state.feature_prompt = None
 
     with st.sidebar:
         st.markdown("""
@@ -566,7 +573,13 @@ def main():
                     display_message_with_sheets_upload(message, index)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    prompt = st.chat_input("Ingresa la URL a extraer o haz una pregunta sobre los datos", key="user_input")
+    chat_input_placeholder = "Ingresa la URL a extraer o haz una pregunta..."
+    prompt = st.chat_input(chat_input_placeholder, key="user_input")
+    
+    # Check if a feature card was clicked and override prompt
+    if st.session_state.get('feature_prompt'):
+        prompt = st.session_state.feature_prompt
+        st.session_state.feature_prompt = None
 
     if prompt:
         st.session_state.chat_history[st.session_state.current_chat_id]["messages"].append({"role": "user", "content": prompt})
