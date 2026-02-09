@@ -7,7 +7,7 @@ Provides user-friendly error messages with instructions and README links.
 import os
 
 
-README_URL = "https://github.com/itsOwen/CyberScraper-2077/blob/main/README.md"
+README_URL = "https://github.com/fito422480/GVA/blob/main/README.md"
 
 
 class ErrorMessages:
