@@ -1,7 +1,7 @@
-# 🌐 CyberScraper 2077
+# 🌐 GVA Scrapper
 
 <p align="center">
-  <img src="https://i.postimg.cc/j5b7QSzg/scraper.png" alt="CyberScraper 2077 Logo">
+  <img src="https://i.postimg.cc/j5b7QSzg/scraper.png" alt="GVA Scrapper">
 </p>
 
 <p align="center">
