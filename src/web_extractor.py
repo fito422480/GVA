@@ -81,7 +81,7 @@ class WebExtractor:
         # Check for required API keys before initializing
         api_key_error = check_model_api_key(model_name)
         if api_key_error:
-            logger.warning(api_key_error)
+            logger.debug(api_key_error)
 
         if isinstance(model_name, str) and model_name.startswith("ollama:"):
             self.model = OllamaModelManager.get_model(model_name[7:])
@@ -207,6 +207,18 @@ User: {query}"""
                 progress_callback(f"Fetching content from {website_name}...")
 
             response = await self._fetch_url(url, pages, url_pattern, handle_captcha, progress_callback)
+            
+            # Check if there's a specific extraction query besides the URL and parameters
+            clean_query = user_input.replace(url, "").strip()
+            # Remove parameters from clean_query to see if there's an actual question
+            if pages: clean_query = clean_query.replace(pages, "").strip()
+            if url_pattern: clean_query = clean_query.replace(url_pattern, "").strip()
+            clean_query = clean_query.replace("-captcha", "").strip()
+            
+            if clean_query and len(clean_query) > 3:
+                if progress_callback:
+                    progress_callback(f"Extraer información: {clean_query}")
+                response = await self._extract_info(clean_query, conversation_history)
         elif not self.current_content:
             # No URL yet - let LLM chat naturally
             if progress_callback:

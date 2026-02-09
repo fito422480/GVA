@@ -82,7 +82,7 @@ class OllamaModel:
                 models = await response.json()
                 return [model['name'] for model in models.get('models', [])]
         except aiohttp.ClientConnectorError:
-            logger.warning(ErrorMessages.OLLAMA_NOT_RUNNING)
+            logger.debug(ErrorMessages.OLLAMA_NOT_RUNNING)
             return []
         except Exception as e:
             logger.warning(f"Failed to list Ollama models: {str(e)}")

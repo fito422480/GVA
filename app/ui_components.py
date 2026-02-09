@@ -113,6 +113,27 @@ def display_message(message):
             
             if df is not None:
                 st.dataframe(df)
+                
+                # Add persistent download buttons
+                if isinstance(data, io.BytesIO) or (isinstance(content, str) and 'excel' in content.lower()):
+                    st.download_button(
+                        label="Descargar Excel",
+                        data=data,
+                        file_name="datos.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key=f"dl_{time.time()}_{hash(content)}"
+                    )
+                else:
+                    csv_buffer = io.BytesIO()
+                    df.to_csv(csv_buffer, index=False)
+                    csv_buffer.seek(0)
+                    st.download_button(
+                        label="Descargar CSV",
+                        data=csv_buffer,
+                        file_name="datos.csv",
+                        mime="text/csv",
+                        key=f"dl_{time.time()}_{hash(content)}"
+                    )
             else:
                 st.warning("No se pudo mostrar los datos como tabla. Mostrando contenido original:")
                 st.code(content)

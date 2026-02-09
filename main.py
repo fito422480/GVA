@@ -11,6 +11,51 @@ _original_get_script_run_ctx = _ctx.get_script_run_ctx
 _ctx.get_script_run_ctx = lambda suppress_warning=True: _original_get_script_run_ctx(suppress_warning=suppress_warning)
 import json
 import asyncio
+import sys
+
+# Monkeypatch for asyncio ProactorEventLoop bug on Windows
+# See: https://github.com/python/cpython/issues/83439
+if sys.platform == 'win32':
+    from asyncio import proactor_events, base_subprocess, base_events
+    
+    _original_pipe_del = proactor_events._ProactorBasePipeTransport.__del__
+    def _safe_pipe_del(self):
+        try:
+            _original_pipe_del(self)
+        except RuntimeError as e:
+            if str(e) != 'Event loop is closed':
+                raise
+    proactor_events._ProactorBasePipeTransport.__del__ = _safe_pipe_del
+
+    _original_sub_del = base_subprocess.BaseSubprocessTransport.__del__
+    def _safe_sub_del(self):
+        try:
+            _original_sub_del(self)
+        except RuntimeError as e:
+            if str(e) != 'Event loop is closed':
+                raise
+    base_subprocess.BaseSubprocessTransport.__del__ = _safe_sub_del
+
+    _original_pipe_close = proactor_events._ProactorBasePipeTransport.close
+    def _safe_pipe_close(self):
+        try:
+            _original_pipe_close(self)
+        except RuntimeError as e:
+            if str(e) != 'Event loop is closed':
+                raise
+    proactor_events._ProactorBasePipeTransport.close = _safe_pipe_close
+
+    _original_check_closed = base_events.BaseEventLoop._check_closed
+    def _safe_check_closed(self):
+        try:
+            _original_check_closed(self)
+        except RuntimeError as e:
+            if str(e) != 'Event loop is closed':
+                raise
+    base_events.BaseEventLoop._check_closed = _safe_check_closed
+
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 import os
 from dotenv import load_dotenv
 
@@ -111,7 +156,7 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
                     mime="text/csv"
                 )
 
-                return csv_string
+                return csv_string_wrapped
             elif len(response) == 2 and isinstance(response[0], BytesIO):
                 excel_buffer, df = response
                 st.dataframe(df)
@@ -124,7 +169,7 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-                return ("Excel data displayed and available for download.", excel_buffer)
+                return f"```excel\nExcel data displayed and available for download.\n```"
         elif isinstance(response, pd.DataFrame):
             st.dataframe(response)
 
@@ -138,7 +183,9 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
                 mime="text/csv"
             )
 
-            return "Tabla de datos mostrada y disponible para descargar como CSV."
+            # Wrapper for persistence
+            csv_string = response.to_csv(index=False)
+            return f"```csv\n{csv_string}\n```"
 
         return response
     except ValueError as e:
@@ -147,12 +194,14 @@ def safe_process_message(web_scraper_chat, message, conversation_history=None):
         if "API Key" in error_msg or "missing" in error_msg.lower():
             st.error(error_msg)
         else:
-            st.error(f"{ErrorMessages.SCRAPING_FAILED}\n\nDetails: {error_msg}")
-        logger.error(f"ValueError during processing: {error_msg}")
+            st.error(f"{ErrorMessages.SCRAPING_FAILED}\n\nDetalles: {error_msg}")
+        logger.error(f"ValueError durante el procesamiento: {error_msg}")
         return error_msg
-        st.error(f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {str(e)}")
-        logger.error(f"Error inesperado durante el procesamiento: {str(e)}")
-        return f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {str(e)}"
+    except Exception as e:
+        error_msg = str(e)
+        st.error(f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {error_msg}")
+        logger.error(f"Error inesperado durante el procesamiento: {error_msg}")
+        return f"{ErrorMessages.GENERIC_ERROR}\n\nDetalles: {error_msg}"
 
 def get_date_group(date_str):
     date = datetime.strptime(date_str, "%Y-%m-%d")
@@ -445,10 +494,18 @@ def main():
             st.session_state.current_chat_id = new_chat_id
             save_chat_history(st.session_state.chat_history)
     if 'selected_model' not in st.session_state:
-        # Default to Gemini if OpenAI is missing but Google is present
-        if not os.getenv("OPENAI_API_KEY") and os.getenv("GOOGLE_API_KEY"):
-            st.session_state.selected_model = "gemini-1.5-flash"
+        # Prioritize Gemini if OpenAI is missing or vice-versa
+        openai_key = os.getenv("OPENAI_API_KEY")
+        google_key = os.getenv("GOOGLE_API_KEY")
+        
+        if google_key and not openai_key:
+            st.session_state.selected_model = "gemini-2.0-flash"
+        elif openai_key:
+            st.session_state.selected_model = "gpt-4.1-mini"
+        elif google_key:
+            st.session_state.selected_model = "gemini-2.0-flash"
         else:
+            # If no keys, still set a default but warn in UI (display_service_status handles the cross)
             st.session_state.selected_model = "gpt-4.1-mini"
     if 'web_scraper_chat' not in st.session_state:
         st.session_state.web_scraper_chat = None
@@ -584,8 +641,13 @@ def main():
     if prompt:
         st.session_state.chat_history[st.session_state.current_chat_id]["messages"].append({"role": "user", "content": prompt})
 
-        if not st.session_state.web_scraper_chat:
+        if not st.session_state.get('web_scraper_chat'):
             st.session_state.web_scraper_chat = initialize_web_scraper_chat()
+
+        # Only proceed if initialization was successful
+        if not st.session_state.web_scraper_chat:
+            st.info("Por favor, configura tus claves API en la barra lateral para comenzar.")
+            return
 
         url = extract_url(prompt)
         if url:

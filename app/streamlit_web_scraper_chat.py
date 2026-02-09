@@ -10,14 +10,20 @@ class StreamlitWebScraperChat:
 
     def process_message(self, message: str, conversation_history: list[dict] | None = None) -> str:
         async def process_with_progress():
-            progress_placeholder = st.empty()
-            progress_placeholder.text("Processing...")
-            result = await self.web_extractor.process_query(
-                message,
-                conversation_history=conversation_history,
-                progress_callback=progress_placeholder.text
-            )
-            progress_placeholder.empty()
-            return result
+            try:
+                progress_placeholder = st.empty()
+                progress_placeholder.text("Processing...")
+                result = await self.web_extractor.process_query(
+                    message,
+                    conversation_history=conversation_history,
+                    progress_callback=progress_placeholder.text
+                )
+                progress_placeholder.empty()
+                return result
+            finally:
+                try:
+                    await self.web_extractor.playwright_scraper.close()
+                except Exception:
+                    pass
 
         return asyncio.run(process_with_progress())
